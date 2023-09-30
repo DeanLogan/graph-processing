@@ -147,9 +147,9 @@ class Driver {
 			ParallelContextHolder.get().terminate();
 		}
 		System.err.println( "All done" );
-		}
+	}
 
-		static void writeToFile( String file, double[] v ) {
+	static void writeToFile( String file, double[] v ) {
 		try {
 			OutputStreamWriter os
 			= new OutputStreamWriter( new FileOutputStream( file ), "UTF-8" );

@@ -16,8 +16,9 @@ import java.util.StringTokenizer;
 // This class represents the adjacency matrix of a graph as a sparse matrix
 // in coordinate format (COO)
 public class SparseMatrixCOO extends SparseMatrix {
-    // TODO: variable declarations
-    // ...
+    // DONE: variable declarations
+    int[] source;
+    int[] destination;
     int num_vertices; // Number of vertices in the graph
     int num_edges;    // Number of edges in the graph
 
@@ -64,15 +65,16 @@ public class SparseMatrixCOO extends SparseMatrix {
         num_vertices = getNext(rd);
         num_edges = getNext(rd);
 
-        // TODO: Allocate memory for the COO representation
-        // ...
+        // DONE: Allocate memory for the COO representation
+        source = new int[num_edges];
+        destination = new int[num_edges];
 
         int edge[] = new int[2];
         for (int i = 0; i < num_edges; ++i) {
             getNextPair(rd, edge);
-            // TODO:
-            // Insert edge with source edge[0] and destination edge[1]
-            // ...
+            // DONE: Insert edge with source edge[0] and destination edge[1]
+            source[i] = edge[0];
+            destination[i] = edge[1];
         }
     }
 
@@ -86,24 +88,70 @@ public class SparseMatrixCOO extends SparseMatrix {
         return num_edges;
     }
 
-    // Auxiliary function for PageRank calculation
+// Auxiliary function for PageRank calculation
     public void calculateOutDegree(int outdeg[]) {
-        // TODO:
-        // Calculate the out-degree for every vertex, i.e., the
-        // number of edges where a vertex appears as a source vertex.
-        // ...
+        // Initialize out-degrees to zero
+        for (int i = 0; i < num_vertices; i++) {
+            outdeg[i] = 0;
+        }
+
+        // Count out-degrees based on the COO representation
+        for (int i = 0; i < num_edges; i++) {
+            int srcVertex = source[i];
+            outdeg[srcVertex]++;
+        }
     }
 
+    // Perform one sweep over all edges in the graph, calling the functional
+    // interface Relax once for each edge.
     public void edgemap(Relax relax) {
-        // TODO:
-        // Iterate over all edges in the sparse matrix and calculate
-        // the contribution to the new PageRank value of a destination
-        // vertex made by the corresponding source vertex
-        // ...
+        for (int i = 0; i < num_edges; i++) {
+            int srcVertex = source[i];
+            int dstVertex = destination[i];
+
+            // Call the relax operation for the edge (srcVertex, dstVertex)
+            relax.relax(srcVertex, dstVertex);
+        }
     }
 
     public void ranged_edgemap(Relax relax, int from, int to) {
-        // Only implement for parallel/concurrent processing
-        // if you find it useful. Not relevant for the first assignment.
+        int numEdges = to - from;
+        int numThreads = ParallelContextHolder.get().getNumThreads();
+        
+        // Calculate the number of edges to process per thread
+        int edgesPerThread = numEdges / numThreads;
+        
+        // Create an array to hold the threads
+        Thread[] threads = new Thread[numThreads];
+        
+        for (int i = 0; i < numThreads; i++) {
+            final int threadId = i;
+            // Calculate the range of edges for this thread
+            final int start = from + threadId * edgesPerThread;
+            final int end = (threadId == numThreads - 1) ? to : start + edgesPerThread;
+            
+            threads[i] = new Thread(() -> {
+                // Perform PageRank computation on the edges in the range [start, end)
+                for (int j = start; j < end; j++) {
+                    int src = source[j];
+                    int dst = destination[j];
+                    relax.relax(src, dst);
+                }
+            });
+        }
+        
+        // Start all threads
+        for (Thread thread : threads) {
+            thread.start();
+        }
+        
+        // Wait for all threads to complete
+        for (Thread thread : threads) {
+            try {
+                thread.join();
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+        }
     }
 }
