@@ -90,6 +90,10 @@ public class SparseMatrixCOO extends SparseMatrix {
 
 // Auxiliary function for PageRank calculation
     public void calculateOutDegree(int outdeg[]) {
+        // DONE:
+        //    Calculate the out-degree for every vertex, i.e., the
+        //    number of edges where a vertex appears as a source vertex.
+
         // Initialize out-degrees to zero
         for (int i = 0; i < num_vertices; i++) {
             outdeg[i] = 0;
@@ -97,23 +101,30 @@ public class SparseMatrixCOO extends SparseMatrix {
 
         // Count out-degrees based on the COO representation
         for (int i = 0; i < num_edges; i++) {
-            int srcVertex = source[i];
-            outdeg[srcVertex]++;
+            int sourceVertex = source[i];
+            outdeg[sourceVertex]++;
         }
     }
 
     // Perform one sweep over all edges in the graph, calling the functional
     // interface Relax once for each edge.
     public void edgemap(Relax relax) {
-        for (int i = 0; i < num_edges; i++) {
-            int srcVertex = source[i];
-            int dstVertex = destination[i];
+        // DONE:
+        //    Iterate over all edges in the sparse matrix and calculate
+        //    the contribution to the new PageRank value of a destination
+        //    vertex made by the corresponding source vertex
 
-            // Call the relax operation for the edge (srcVertex, dstVertex)
-            relax.relax(srcVertex, dstVertex);
+        for (int i = 0; i < num_edges; i++) {
+            int sourceVertex = source[i];
+            int destinationVertex = destination[i];
+
+            // Call the relax operation for the edge (sourceVertex, destinationVertex)
+            relax.relax(sourceVertex, destinationVertex);
         }
     }
 
+    // Only implement for parallel/concurrent processing
+    // if you find it useful. Not relevant for the first assignment.
     public void ranged_edgemap(Relax relax, int from, int to) {
         int numEdges = to - from;
         int numThreads = ParallelContextHolder.get().getNumThreads();
