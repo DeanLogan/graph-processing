@@ -70,7 +70,7 @@ public class SparseMatrixCSR extends SparseMatrix {
                 int dst = Integer.parseInt(elm[j]);
                 // DONE:
                 //    Record an edge from source i to destination dst
-                columnIndices[rowPointers[i] + j - 1] = dst; // Store the destination in columnIndices and increment currentIndex
+                columnIndices[rowPointers[i] + j - 1] = dst; // Store the destination in columnIndices
             }
             rowPointers[i + 1] = rowPointers[i] + elm.length - 1; // Set the next row pointer
         }
@@ -92,21 +92,9 @@ public class SparseMatrixCSR extends SparseMatrix {
         //    Calculate the out-degree for every vertex, i.e., the
         //    number of edges where a vertex appears as a source vertex.
         
-        // Initialize out-degrees to zero for all vertices
-        for (int i = 0; i < num_vertices; i++) {
-            outdeg[i] = 0;
-        }
-
-        // Iterate over each vertex's adjacency list using CSR representation
-        for (int i = 0; i < num_vertices; i++) {
-            int start = rowPointers[i];          // Starting position in colIndices
-            int end = rowPointers[i + 1];        // Ending position in colIndices
-
-            // Calculate the out-degree for the current vertex
-            int outDegree = end - start;
-
-            // Store the out-degree in the outdeg array
-            outdeg[i] = outDegree;
+        // assumes outdeg[] is already initialised to 0
+        for (int i=0; i < num_vertices; i++) {
+            outdeg[i] = rowPointers[i + 1] - rowPointers[i]; // Set the out degree to the difference between the next row pointer and the current row pointer as this difference is the same as the number of edges for the current vertex
         }
     }
 
@@ -116,20 +104,9 @@ public class SparseMatrixCSR extends SparseMatrix {
         //    Iterate over all edges in the sparse matrix and calculate
         //    the contribution to the new PageRank value of a destination
         //    vertex made by the corresponding source vertex
-        
-        // Iterate over each vertex in the CSR representation
-        for (int i = 0; i < num_vertices; i++) {
-            int start = rowPointers[i];          // Starting position in colIndices
-            int end = rowPointers[i + 1];        // Ending position in colIndices
-
-            // Iterate over the edges (outgoing edges) of the current vertex
-            for (int j = start; j < end; j++) {
-                int srcVertex = i;
-                int dstVertex = columnIndices[j];
-                
-                // Call the relax function to calculate the contribution
-                // to the new PageRank value of the destination vertex
-                relax.relax(srcVertex, dstVertex);
+        for(int i=0; i<num_vertices; i++){
+            for(int j=0; j<(rowPointers[i+1]-rowPointers[i]); j++){
+                relax.relax(i, columnIndices[j+rowPointers[i]]);
             }
         }
     }

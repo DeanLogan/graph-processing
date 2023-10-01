@@ -94,15 +94,9 @@ public class SparseMatrixCOO extends SparseMatrix {
         //    Calculate the out-degree for every vertex, i.e., the
         //    number of edges where a vertex appears as a source vertex.
 
-        // Initialize out-degrees to zero
-        for (int i = 0; i < num_vertices; i++) {
-            outdeg[i] = 0;
-        }
-
-        // Count out-degrees based on the COO representation
-        for (int i = 0; i < num_edges; i++) {
-            int sourceVertex = source[i];
-            outdeg[sourceVertex]++;
+        // assumes outdeg[] is already initialised to 0
+        for (int i=0; i < num_edges; i++) {
+            outdeg[source[i]]++; // Increments the out degree for everytime the source vertix appears in the source array. 
         }
     }
 
@@ -114,12 +108,8 @@ public class SparseMatrixCOO extends SparseMatrix {
         //    the contribution to the new PageRank value of a destination
         //    vertex made by the corresponding source vertex
 
-        for (int i = 0; i < num_edges; i++) {
-            int sourceVertex = source[i];
-            int destinationVertex = destination[i];
-
-            // Call the relax operation for the edge (sourceVertex, destinationVertex)
-            relax.relax(sourceVertex, destinationVertex);
+        for (int i=0; i < num_edges; i++) {
+            relax.relax(source[i], destination[i]);
         }
     }
 
@@ -135,7 +125,7 @@ public class SparseMatrixCOO extends SparseMatrix {
         // Create an array to hold the threads
         Thread[] threads = new Thread[numThreads];
         
-        for (int i = 0; i < numThreads; i++) {
+        for (int i=0; i < numThreads; i++) {
             final int threadId = i;
             // Calculate the range of edges for this thread
             final int start = from + threadId * edgesPerThread;

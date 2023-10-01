@@ -16,8 +16,9 @@ import java.io.UnsupportedEncodingException;
 // in compressed sparse columns format (CSC). The incoming edges for each
 // vertex are listed.
 public class SparseMatrixCSC extends SparseMatrix {
-    // TODO: variable declarations
-    // ...
+    // DONE: variable declarations
+    int[] columnPointers;
+    int[] rowIndices;
     int num_vertices; // Number of vertices in the graph
     int num_edges;    // Number of edges in the graph
 
@@ -55,8 +56,9 @@ public class SparseMatrixCSC extends SparseMatrix {
         num_vertices = getNext(rd);
         num_edges = getNext(rd);
 
-        // TODO: allocate data structures
-        // ...
+        // DONE: allocate data structures
+        columnPointers = new int[num_vertices+1]; // adds an extra 1 to the array to store the last row pointer
+        rowIndices = new int[num_edges];
 
         for (int i = 0; i < num_vertices; ++i) {
             line = rd.readLine();
@@ -66,10 +68,11 @@ public class SparseMatrixCSC extends SparseMatrix {
             assert Integer.parseInt(elm[0]) == i : "Error in CSC file";
             for (int j = 1; j < elm.length; ++j) {
                 int src = Integer.parseInt(elm[j]);
-                // TODO:
+                // DONE:
                 // Record an edge from source src to destination i
-                // ...
+                rowIndices[columnPointers[i] + j - 1] = src; // Store the source in rowIndeces
             }
+            columnPointers[i + 1] = columnPointers[i] + elm.length - 1; // Set the next column pointer
         }
     }
 
@@ -83,20 +86,29 @@ public class SparseMatrixCSC extends SparseMatrix {
         return num_edges;
     }
 
-
     // Auxiliary function for PageRank calculation
     public void calculateOutDegree(int outdeg[]) {
-        // TODO:
-        // Calculate the out-degree for every vertex, i.e., the
-        // number of edges where a vertex appears as a source vertex.
-        // ...
+        // DONE:
+        //    Calculate the out-degree for every vertex, i.e., the
+        //    number of edges where a vertex appears as a source vertex.
+        
+        // assumes outdeg[] is already initialised to 0
+        for (int i=0; i < num_vertices; i++) {
+            outdeg[i] = columnPointers[i + 1] - columnPointers[i];
+        }
     }
 
+    // Apply relax once to every edge in the graph
     public void edgemap(Relax relax) {
-        // TODO:
-        // Iterate over all edges in the sparse matrix and call "relax"
-        // on each edge.
-        // ...
+        // DONE:
+        //    Iterate over all edges in the sparse matrix and calculate
+        //    the contribution to the new PageRank value of a destination
+        //    vertex made by the corresponding source vertex
+        for(int i=0; i<num_vertices; i++){
+            for(int j=0; j<(columnPointers[i+1]-columnPointers[i]); j++){
+                relax.relax(i, rowIndices[j+columnPointers[i]]);
+            }
+        }
     }
 
     public void ranged_edgemap(Relax relax, int from, int to) {
