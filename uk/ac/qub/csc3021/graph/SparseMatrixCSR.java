@@ -17,8 +17,8 @@ import java.io.UnsupportedEncodingException;
 // a source vertex and a column index corresponds to a destination
 public class SparseMatrixCSR extends SparseMatrix {
     // DONE: variable declarations
-    int[] rowPointers;
-    int[] columnIndices;
+    int[] index;
+    int[] destinations;
     int num_vertices; // Number of vertices in the graph
     int num_edges;    // Number of edges in the graph
 
@@ -57,8 +57,8 @@ public class SparseMatrixCSR extends SparseMatrix {
         num_edges = getNext(rd);
 
         // DONE: Allocate memory for the CSR representation
-        rowPointers = new int[num_vertices+1]; // adds an extra 1 to the array to store the last row pointer
-        columnIndices = new int[num_edges];
+        index = new int[num_vertices+1];
+        destinations = new int[num_edges];
 
         for (int i = 0; i < num_vertices; ++i) {
             line = rd.readLine();
@@ -70,9 +70,9 @@ public class SparseMatrixCSR extends SparseMatrix {
                 int dst = Integer.parseInt(elm[j]);
                 // DONE:
                 //    Record an edge from source i to destination dst
-                columnIndices[rowPointers[i] + j - 1] = dst; // Store the destination in columnIndices
+                destinations[index[i] + j - 1] = dst; // Store the destination in destinations
             }
-            rowPointers[i + 1] = rowPointers[i] + elm.length - 1; // Set the next row pointer
+            index[i + 1] = index[i] + elm.length - 1; // Set the next index
         }
     }
 
@@ -94,7 +94,7 @@ public class SparseMatrixCSR extends SparseMatrix {
         
         // assumes outdeg[] is already initialised to 0
         for (int i=0; i < num_vertices; i++) {
-            outdeg[i] = rowPointers[i + 1] - rowPointers[i]; // Set the out degree to the difference between the next row pointer and the current row pointer as this difference is the same as the number of edges for the current vertex
+            outdeg[i] = index[i + 1] - index[i];
         }
     }
 
@@ -105,8 +105,8 @@ public class SparseMatrixCSR extends SparseMatrix {
         //    the contribution to the new PageRank value of a destination
         //    vertex made by the corresponding source vertex
         for(int i=0; i<num_vertices; i++){
-            for(int j=0; j<(rowPointers[i+1]-rowPointers[i]); j++){
-                relax.relax(i, columnIndices[j+rowPointers[i]]);
+            for(int j=0; j<(index[i+1]-index[i]); j++){
+                relax.relax(i, destinations[j+index[i]]);
             }
         }
     }

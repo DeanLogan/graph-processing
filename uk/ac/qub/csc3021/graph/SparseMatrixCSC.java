@@ -17,8 +17,8 @@ import java.io.UnsupportedEncodingException;
 // vertex are listed.
 public class SparseMatrixCSC extends SparseMatrix {
     // DONE: variable declarations
-    int[] columnPointers;
-    int[] rowIndices;
+    int[] index;
+    int[] sources;
     int num_vertices; // Number of vertices in the graph
     int num_edges;    // Number of edges in the graph
 
@@ -57,8 +57,8 @@ public class SparseMatrixCSC extends SparseMatrix {
         num_edges = getNext(rd);
 
         // DONE: allocate data structures
-        columnPointers = new int[num_vertices+1]; // adds an extra 1 to the array to store the last row pointer
-        rowIndices = new int[num_edges];
+        index = new int[num_vertices+1];
+        sources = new int[num_edges];
 
         for (int i = 0; i < num_vertices; ++i) {
             line = rd.readLine();
@@ -70,9 +70,9 @@ public class SparseMatrixCSC extends SparseMatrix {
                 int src = Integer.parseInt(elm[j]);
                 // DONE:
                 // Record an edge from source src to destination i
-                rowIndices[columnPointers[i] + j - 1] = src; // Store the source in rowIndeces
+                sources[index[i] + j - 1] = src; // Store the source in sources
             }
-            columnPointers[i + 1] = columnPointers[i] + elm.length - 1; // Set the next column pointer
+            index[i + 1] = index[i] + elm.length - 1; // Set the next index
         }
     }
 
@@ -93,8 +93,8 @@ public class SparseMatrixCSC extends SparseMatrix {
         //    number of edges where a vertex appears as a source vertex.
         
         // assumes outdeg[] is already initialised to 0
-        for (int i=0; i < num_vertices; i++) {
-            outdeg[i] = columnPointers[i + 1] - columnPointers[i];
+        for (int i = 0; i < num_edges; ++i) {
+            outdeg[sources[i]]++;
         }
     }
 
@@ -105,8 +105,8 @@ public class SparseMatrixCSC extends SparseMatrix {
         //    the contribution to the new PageRank value of a destination
         //    vertex made by the corresponding source vertex
         for(int i=0; i<num_vertices; i++){
-            for(int j=0; j<(columnPointers[i+1]-columnPointers[i]); j++){
-                relax.relax(i, rowIndices[j+columnPointers[i]]);
+            for(int j=0; j<(index[i+1]-index[i]); j++){
+                relax.relax(sources[j+index[i]], i);
             }
         }
     }
