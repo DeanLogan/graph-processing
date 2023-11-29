@@ -49,11 +49,16 @@ public class PageRank {
 
         PageRankRelax PRrelax = new PageRankRelax(outdeg, d, x, y);
         ParallelContext context = ParallelContextHolder.get();
+        double totalEdgeMapTime = 0;
+        long tm_start_edge_map = System.nanoTime();
 
         while (iter < max_iter && delta > tol) {
             // Power iteration step.
             // 1. Transferring weight over out-going links (summation part)
+            tm_start_edge_map = System.nanoTime();
             context.edgemap(matrix, PRrelax);
+            totalEdgeMapTime += (double) (System.nanoTime() - tm_start_edge_map) * 1e-9;
+            System.err.println("Testing: " + totalEdgeMapTime + " seconds");
             // 2. Constants (1-d)v[i] added in separately.
             double w = 1.0 - sum(y, n); // ensure y[] will sum to 1
             for (int i = 0; i < n; ++i)
@@ -77,6 +82,8 @@ public class PageRank {
                         + " time=" + tm_step + " seconds");
             tm_start = System.nanoTime();
         }
+
+        System.err.println("Total edgemap time: " + totalEdgeMapTime + " seconds");
 
         if (delta > tol) {
             System.err.println("Error: solution has not converged.");

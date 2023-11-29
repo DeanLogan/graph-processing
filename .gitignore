@@ -3,7 +3,9 @@
 *.sh~
 *.zip
 *.gz
+*.txt
 .DS_Store
 /largeGraphs
 /mediumGraphs
+/smallGraphs
 /graphs
