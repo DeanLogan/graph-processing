@@ -31,3 +31,7 @@ When compiling the Driver file
 Usage: java Driver algorithm num-threads outputfile format inputfiles...
 % java Driver (pr|cc) 1 /path/to/outputfile.txt COO  /path/to/graph.CSR /path/to/graph.CSC /path/to/graph.COO
 Replace the path /path/to/graph.COO with the directory and filename for the graph file of your choice. Choose one of pr or cc.  Specify a file to store the program output (either PageRank values or histogram of cluster sizes). This code will execute the program on a single thread of execution.
+
+Commands below:
+javac Driver.java
+java -ea Driver (pr|cc) 1 ".\output.txt" (CSR|CSC|COO|ICHOOSE) ".\smallGraphs\rMatGraph_J_5_100.csr"

@@ -58,7 +58,6 @@ public class PageRank {
             tm_start_edge_map = System.nanoTime();
             context.edgemap(matrix, PRrelax);
             totalEdgeMapTime += (double) (System.nanoTime() - tm_start_edge_map) * 1e-9;
-            System.err.println("Testing: " + totalEdgeMapTime + " seconds");
             // 2. Constants (1-d)v[i] added in separately.
             double w = 1.0 - sum(y, n); // ensure y[] will sum to 1
             for (int i = 0; i < n; ++i)
