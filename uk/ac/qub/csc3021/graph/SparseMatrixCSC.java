@@ -114,14 +114,13 @@ public class SparseMatrixCSC extends SparseMatrix {
     public void ranged_edgemap(Relax relax, int from, int to) {
         // Only implement for parallel/concurrent processing
         // if you find it useful. Not relevant for the first assignment.
-        // TODO:
+        // DONE:
         // Iterate over partition indicated by from...to and calculate
         // the contribution to the new PageRank value of a destination
         // vertex made by the corresponding source vertex
         for (int i = from; i < to; i++) {
-            // Iterate over the non-zero elements in the column
-            for(int j=0; j<(index[i+1]-index[i]); j++){
-                relax.relax(sources[j+index[i]], i);
+            for(int j=index[i]; j<(index[i+1]); j++){
+                relax.relax(sources[j], i);
             }
         }
     }

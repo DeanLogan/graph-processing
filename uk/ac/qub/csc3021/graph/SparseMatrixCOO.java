@@ -116,43 +116,8 @@ public class SparseMatrixCOO extends SparseMatrix {
     // Only implement for parallel/concurrent processing
     // if you find it useful. Not relevant for the first assignment.
     public void ranged_edgemap(Relax relax, int from, int to) {
-        int numEdges = to - from;
-        int numThreads = ParallelContextHolder.get().getNumThreads();
-        
-        // Calculate the number of edges to process per thread
-        int edgesPerThread = numEdges / numThreads;
-        
-        // Create an array to hold the threads
-        Thread[] threads = new Thread[numThreads];
-        
-        for (int i=0; i < numThreads; i++) {
-            final int threadId = i;
-            // Calculate the range of edges for this thread
-            final int start = from + threadId * edgesPerThread;
-            final int end = (threadId == numThreads - 1) ? to : start + edgesPerThread;
-            
-            threads[i] = new Thread(() -> {
-                // Perform PageRank computation on the edges in the range [start, end)
-                for (int j = start; j < end; j++) {
-                    int src = source[j];
-                    int dst = destination[j];
-                    relax.relax(src, dst);
-                }
-            });
-        }
-        
-        // Start all threads
-        for (Thread thread : threads) {
-            thread.start();
-        }
-        
-        // Wait for all threads to complete
-        for (Thread thread : threads) {
-            try {
-                thread.join();
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-            }
+        for (int i=from; i < to; i++) {
+            relax.relax(source[i], destination[i]);
         }
     }
 }

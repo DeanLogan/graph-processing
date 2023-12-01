@@ -21,7 +21,7 @@ public class ParallelContextSimple extends ParallelContext {
             // Calculate the range of vertices for this thread
             int verticesPerThread = numberOfVertices / numberOfThreads;
             int startVertex = threadId * verticesPerThread;
-            int endVertex = (threadId == numberOfThreads - 1) ? numberOfVertices : (threadId + 1) * verticesPerThread - 1;
+            int endVertex = (threadId == numberOfThreads - 1) ? numberOfVertices : (threadId + 1) * verticesPerThread;
 
             // Perform edgemap for the specified range of vertices
             matrix.ranged_edgemap(relax, startVertex, endVertex);
@@ -46,19 +46,16 @@ public class ParallelContextSimple extends ParallelContext {
         for (int i = 0; i < numberOfThreads; i++) {
             ThreadSimple thread = new ThreadSimple(i, matrix, relax);
             threads[i] = thread;
-        }
-
-        for (ThreadSimple thread : threads) {
             thread.start();
         }
 
-        // Wait for all threads to complete
-        try {
-            for (ThreadSimple thread : threads) {
-                thread.join();
+        // Wait for all threads to finish
+        for (int i = 0; i < numberOfThreads; i++) {
+            try {
+                threads[i].join();
+            } catch (InterruptedException e) {
+                e.printStackTrace();
             }
-        } catch (InterruptedException e) {
-            e.printStackTrace();
         }
     }
 }

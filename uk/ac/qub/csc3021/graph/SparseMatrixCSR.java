@@ -112,8 +112,11 @@ public class SparseMatrixCSR extends SparseMatrix {
     }
 
     public void ranged_edgemap(Relax relax, int from, int to) {
-        // Only implement for parallel/concurrent processing
-        // if you find it useful. Not relevant for the first assignment.
+        for (int i = from; i < to; i++) {
+            for (int j = index[i]; j < index[i + 1]; j++) {
+                relax.relax(i, destinations[j]);
+            }
+        }
     }
 }
 
