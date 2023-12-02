@@ -1,5 +1,6 @@
 package uk.ac.qub.csc3021.graph;
 
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicIntegerArray;
 
 // Calculate the connected components using the disjoint set data structure
@@ -7,29 +8,64 @@ import java.util.concurrent.atomic.AtomicIntegerArray;
 public class DisjointSetCC {
     private static class DSCCRelax implements Relax {
         DSCCRelax(AtomicIntegerArray parent_) {
-            // ...
+            parents = new AtomicIntegerArray(parent_.length());
+    
+            for (int i = 0; i < parent_.length(); i++) {
+                parents.set(i, i); // Initialize each element with its index as the parent
+            }
         }
-
+    
         public void relax(int src, int dst) {
             union(src, dst);
         }
 
-        public int find(int x) {
-            // ...
-            return 0;
+        public int find(int x) { // halving
+            if (x != parents.get(x)) {
+                parents.set(x, find(parents.get(x)));
+            }
+            return parents.get(x);
         }
 
+        public int findNoCompression(int x) {
+            while (x != parents.get(x)) {
+                x = parents.get(x);
+            }
+            return x;
+        }
+    
+        public int findHalving(int x) {
+            if (x != parents.get(x)) {
+                parents.set(x, findHalving(parents.get(x)));
+            }
+            return parents.get(x);
+        }
+
+        public int findSplitting(int x) {
+            while (x != parents.get(x)) {
+                int next = parents.get(x);
+                parents.set(x, parents.get(next));
+                x = next;
+            }
+            return x;
+        }
+    
         private boolean sameSet(int x, int y) {
-            // ...
-            return false;
+            return find(x) == find(y);
         }
-
-        private boolean union(int x, int y) {
-            return false;
+    
+        private void union(int x, int y) {
+            int xSet = find(x);
+            int ySet = find(y);
+    
+            if (ySet < xSet) {
+                parents.set(xSet, ySet);
+            } else {
+                parents.set(ySet, xSet);
+            }
         }
 
         // Variable declarations
-        private AtomicIntegerArray parent;
+        private AtomicIntegerArray parents;
     }
 
     public static int[] compute(SparseMatrix matrix) {
