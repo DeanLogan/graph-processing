@@ -19,19 +19,22 @@ public class DisjointSetCC {
             union(src, dst);
         }
 
-        public int find(int x) { // halving
-            if (x != parents.get(x)) {
-                parents.set(x, find(parents.get(x)));
-            }
-            return parents.get(x);
-        }
-
-        public int findNoCompression(int x) {
+        public int find(int x)  {
             while (x != parents.get(x)) {
-                x = parents.get(x);
+                int next = parents.get(x);
+                parents.set(x, parents.get(next));
+                x = next;
             }
             return x;
         }
+    
+        // public int find(int x) { 
+        //     while (x != parents.get(x)) {
+        //         parents.set(x, parents.get(parents.get(x))); // Halving step
+        //         x = parents.get(x);
+        //     }
+        //     return x;
+        // }
     
         public int findHalving(int x) {
             if (x != parents.get(x)) {
@@ -53,14 +56,20 @@ public class DisjointSetCC {
             return find(x) == find(y);
         }
     
-        private void union(int x, int y) {
-            int xSet = find(x);
-            int ySet = find(y);
-    
-            if (ySet < xSet) {
-                parents.set(xSet, ySet);
-            } else {
-                parents.set(ySet, xSet);
+        private boolean union(int x, int y) {        
+            while (true) {
+                int u = find(x);
+                int v = find(y);
+        
+                if (parents.get(u) < parents.get(v)) {
+                    if (parents.compareAndSet(u, u, v)) {
+                        return false;
+                    }
+                } else if (u == v) {
+                    return true;
+                } else if (parents.compareAndSet(v, v, u)) {
+                    return false;
+                }
             }
         }
 

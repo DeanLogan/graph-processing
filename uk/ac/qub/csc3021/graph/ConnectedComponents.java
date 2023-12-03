@@ -101,6 +101,8 @@ public class ConnectedComponents {
         if (verbose)
             System.err.println("ConnectedComponents: " + ncc + " components");
 
+        System.err.println("Total time: " + (double) (System.nanoTime() - tm_start) * 1e-9 + " seconds");
+
         return sizes;
     }
 }
