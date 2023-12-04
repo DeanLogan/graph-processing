@@ -95,6 +95,8 @@ public class DisjointSetCC {
         System.err.println("Initialisation: " + tm_init + " seconds");
         tm_start = System.nanoTime();
 
+        ParallelContextHolder.set( new ParallelContextSingleThread() );
+
         ParallelContext context = ParallelContextHolder.get();
 
         // 1. Make pass over graph
