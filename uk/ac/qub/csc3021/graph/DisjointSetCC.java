@@ -81,6 +81,7 @@ public class DisjointSetCC {
         long tm_start = System.nanoTime();
 
         final int n = matrix.getNumVertices();
+        System.out.println("Number of vertices: " + n);
         final AtomicIntegerArray parent = new AtomicIntegerArray(n);
         final boolean verbose = true;
 

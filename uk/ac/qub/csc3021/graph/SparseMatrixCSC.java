@@ -104,11 +104,15 @@ public class SparseMatrixCSC extends SparseMatrix {
         //    Iterate over all edges in the sparse matrix and calculate
         //    the contribution to the new PageRank value of a destination
         //    vertex made by the corresponding source vertex
+        int count = 0;
         for(int i=0; i<num_vertices; i++){
             for(int j=0; j<(index[i+1]-index[i]); j++){
+                count++;
+                //System.out.println(sources[j+index[i]]+" "+i);
                 relax.relax(sources[j+index[i]], i);
             }
         }
+        System.out.println(count);
     }
 
     public void ranged_edgemap(Relax relax, int from, int to) {
