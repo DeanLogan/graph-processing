@@ -1,25 +1,13 @@
 package uk.ac.qub.csc3021.graph;
 
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
 import java.io.BufferedReader;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.InputStreamReader;
 import java.io.UnsupportedEncodingException;
-import java.lang.reflect.Array;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.List;
-import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.ExecutionException;
 import java.util.concurrent.LinkedBlockingQueue;
-import java.util.concurrent.TimeUnit;
-import java.io.IOException;
 
 
 public class SparseMatrixPipelined extends SparseMatrix {
@@ -27,7 +15,7 @@ public class SparseMatrixPipelined extends SparseMatrix {
     int[] sources;
     int num_vertices; // Number of vertices in the graph
     int num_edges;    // Number of edges in the graph
-    private volatile boolean continueRunning = true;
+    private static final int[][] END_MARKER = new int[0][0];
 
     private String file;
     private LinkedBlockingQueue<int[][]> queue;
@@ -104,8 +92,8 @@ public class SparseMatrixPipelined extends SparseMatrix {
             queue.put(Arrays.copyOf(block, blockCounter)); // copy only the filled part of the block
         }
 
-        while(!queue.isEmpty()){}
-        continueRunning = false;
+        // Add end marker to queue
+        queue.put(END_MARKER);
     }
 
     // Return number of vertices in the graph
@@ -130,27 +118,30 @@ public class SparseMatrixPipelined extends SparseMatrix {
         throw new UnsupportedOperationException("Unimplemented method 'ranged_edgemap'");
     }
 
-    public void startConsumer(Relax relax) {
+    public Thread startConsumer(Relax relax) {
         Thread consumerThread = new Thread(() -> {
-            int[][] block;
-            while(continueRunning) {
-                try {
-                    if(queue.isEmpty() == true) {
-                        continue;
+            try {
+                while(true) {
+                    int[][] block = queue.take();
+                    if(block == END_MARKER) {
+                        // Producer has finished, so break the loop
+                        break;
                     }
-                    block = queue.take();
+                    //System.out.println("Consumer running");
                     for(int i = 0; i < block.length; i++) {
                         if(block[i][0] != block[i][1]) {
+                            //System.out.println(block[i][0] + " "+ block[i][1]);
                             relax.relax(block[i][0], block[i][1]);
                         }                    
                     }
-                } catch (InterruptedException e) {
-                    e.printStackTrace();
                 }
+            } catch (InterruptedException e) {
+                e.printStackTrace();
             }
         });
 
         consumerThread.start();
+        return consumerThread;
     }
 
     public void consumer(Relax relax){
@@ -159,15 +150,10 @@ public class SparseMatrixPipelined extends SparseMatrix {
             try {
                 block = queue.take();
                 for(int i = 0; i < block.length; i++) {
-                    if(block[i][0] == block[i][1]) {
-                        //System.out.println("lol");
-                    } else{
-                        // System.out.println(block[i][0] + " "+ block[i][1]);
+                    if(block[i][0] != block[i][1]) {
                         relax.relax(block[i][0], block[i][1]);
-                    }
-                    
+                    } 
                 }
-                // break;
             } catch (InterruptedException e) {
                 e.printStackTrace();
             }
@@ -177,10 +163,11 @@ public class SparseMatrixPipelined extends SparseMatrix {
     @Override
     public void edgemap(Relax relax) {
         try {
-            startConsumer(relax);
+            Thread consumerThread = startConsumer(relax);
             InputStreamReader is = new InputStreamReader(new FileInputStream(file), "UTF-8");
             BufferedReader rd = new BufferedReader(is);
             readFile(rd, 128);
+            consumerThread.join();
         } catch (FileNotFoundException e) {
             System.err.println("File not found: " + e);
             return;
