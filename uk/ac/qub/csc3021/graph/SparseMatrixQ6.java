@@ -10,7 +10,7 @@ import java.util.Arrays;
 import java.util.concurrent.LinkedBlockingQueue;
 
 
-public class SparseMatrixPipelined extends SparseMatrix {
+public class SparseMatrixQ6 extends SparseMatrix {
     int[] index;
     int[] sources;
     int num_vertices; // Number of vertices in the graph
@@ -21,7 +21,7 @@ public class SparseMatrixPipelined extends SparseMatrix {
     private LinkedBlockingQueue<int[][]> queue;
     private int block_size;
 
-    public SparseMatrixPipelined(String file, int buffer_size) {
+    public SparseMatrixQ6(String file, int buffer_size) {
         this.file = file;
         buffer_size = 6;
         // buffer_size = Integer.MAX_VALUE;

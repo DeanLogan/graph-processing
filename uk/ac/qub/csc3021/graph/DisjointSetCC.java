@@ -28,19 +28,20 @@ public class DisjointSetCC {
             return x;
         }
     
-        // public int find(int x) { 
-        //     while (x != parents.get(x)) {
-        //         parents.set(x, parents.get(parents.get(x))); // Halving step
-        //         x = parents.get(x);
-        //     }
-        //     return x;
-        // }
+        public int findNoCompression(int x) {
+            while (x != parents.get(x)) {
+                x = parents.get(x);
+            }
+            return x;
+        }
     
         public int findHalving(int x) {
-            if (x != parents.get(x)) {
-                parents.set(x, findHalving(parents.get(x)));
+            while (x != parents.get(x)) {
+                int next = parents.get(x);
+                parents.set(x, parents.get(next));
+                x = next;
             }
-            return parents.get(x);
+            return x;
         }
 
         public int findSplitting(int x) {
@@ -95,8 +96,6 @@ public class DisjointSetCC {
         double tm_init = (double) (System.nanoTime() - tm_start) * 1e-9;
         System.err.println("Initialisation: " + tm_init + " seconds");
         tm_start = System.nanoTime();
-
-        ParallelContextHolder.set( new ParallelContextSingleThread() );
 
         ParallelContext context = ParallelContextHolder.get();
 
