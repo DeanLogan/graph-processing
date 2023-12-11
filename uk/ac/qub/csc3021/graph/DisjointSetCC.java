@@ -61,7 +61,7 @@ public class DisjointSetCC {
             while (true) {
                 int u = find(x);
                 int v = find(y);
-        
+                
                 if (parents.get(u) < parents.get(v)) {
                     if (parents.compareAndSet(u, u, v)) {
                         return false;
