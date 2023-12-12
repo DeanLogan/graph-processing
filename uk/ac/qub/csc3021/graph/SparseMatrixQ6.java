@@ -8,10 +8,12 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.RandomAccessFile;
 import java.io.UnsupportedEncodingException;
+import java.nio.Buffer;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
@@ -46,6 +48,8 @@ public class SparseMatrixQ6 extends SparseMatrix {
             return -1;
         }
     }
+
+    // attempt 1
 
     int getNext(BufferedReader rd) throws Exception {
         String line = rd.readLine();
@@ -92,6 +96,25 @@ public class SparseMatrixQ6 extends SparseMatrix {
         executor.shutdown();
     }
 
+    public void edgemap1(Relax relax) {
+        try {
+            InputStreamReader is = new InputStreamReader(new FileInputStream(file), "UTF-8");
+            BufferedReader rd = new BufferedReader(is);
+            readFile(rd, relax);
+        } catch (FileNotFoundException e) {
+            System.err.println("File not found: " + e);
+            return;
+        } catch (UnsupportedEncodingException e) {
+            System.err.println("Unsupported encoding exception: " + e);
+            return;
+        } catch (Exception e) {
+            e.printStackTrace();
+            return;
+        }
+    }
+
+    // attempt 2
+
     private static int getFileSize(RandomAccessFile rd) throws IOException {
         return (int) rd.length();
     }
@@ -120,54 +143,39 @@ public class SparseMatrixQ6 extends SparseMatrix {
             e.printStackTrace();
         }
     }
-    
 
-    public void edgemap1(Relax relax){
-        // try{
-        //     RandomAccessFile rd = new RandomAccessFile(file, "r");
-        //     int fileSize = getFileSize(rd);
-        //     int chunkSize = fileSize / numThreads;
-        //     rd.readLine();
-        //     rd.readLine();
-        //     rd.readLine();
-        //     int position = (int) rd.getFilePointer();
-        //     int start = 1 * chunkSize;
-        //     readLinesInRange(rd, position,   (0 == numThreads - 1) ? fileSize : (0 + 1) * chunkSize, relax);
-        //     System.out.println("file");
-        //     readLinesInRange(rd, start,   (1 == numThreads - 1) ? fileSize : (1 + 1) * chunkSize, relax);
-        // }
-        // catch(Exception e){
-        //     e.printStackTrace();
-        // }
-
+    public void edgemap2(Relax relax){
         try {
             RandomAccessFile rd = new RandomAccessFile(file, "r");
-            
+        
             int fileSize = getFileSize(rd);
             int chunkSize = fileSize / numThreads;
-
-            Thread[] threads = new Thread[numThreads];
+        
             rd.readLine();
             rd.readLine();
             rd.readLine();
             int position = (int) rd.getFilePointer();
             rd.close();
-            
-            Thread thread = new Thread(() -> readLinesInRange(position, (0 == numThreads - 1) ? fileSize : (0 + 1) * chunkSize, relax,0));
-            thread.start();
-            threads[0] = thread;
-
+        
+            List<Thread> threads = new ArrayList<>();
+        
+            Thread firstThread = new Thread(() -> readLinesInRange(position, (0 == numThreads - 1) ? fileSize : (0 + 1) * chunkSize, relax, 0));
+            firstThread.start();
+            threads.add(firstThread);
+        
             for (int i = 1; i < numThreads; i++) {
                 int start = i * chunkSize + 1;
                 long end = (i == numThreads - 1) ? fileSize : (i + 1) * chunkSize;
-                thread = new Thread(() -> readLinesInRange(start, end, relax,(int)Thread.currentThread().getId()));
+                final int threadId = i;
+                Thread thread = new Thread(() -> readLinesInRange(start, end, relax, threadId));
                 thread.start();
-                threads[i] = thread;
+                threads.add(thread);
             }
+        
             // Wait for all threads to finish
-            for (Thread threadL : threads) {
+            for (Thread thread : threads) {
                 try {
-                    threadL.join();
+                    thread.join();
                 } catch (InterruptedException e) {
                     e.printStackTrace();
                 }
@@ -177,11 +185,119 @@ public class SparseMatrixQ6 extends SparseMatrix {
         }
     }
 
+
+    // attempt 3
+    
+    void readRangeBuffered(int start, long end, Relax relax, int threadId) {
+        try {
+            InputStreamReader is = new InputStreamReader(new FileInputStream(file), "UTF-8");
+            BufferedReader rd = new BufferedReader(is);
+            for(int i = 0; i < start; i++){
+                rd.readLine();
+            }
+
+            for(int i = start-3; i < end; i++){
+                try{
+                    String[] elm = rd.readLine().split(" ");
+                    for (int j = 1; j < elm.length; ++j) {
+                        relax.relax(Integer.parseInt(elm[j]), i);
+                    }
+                }
+                catch(Exception e){
+                    break;
+                }
+            }
+            rd.close();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+    
+    int getPageLength(){
+        try {
+            InputStreamReader is = new InputStreamReader(new FileInputStream(file), "UTF-8");
+            BufferedReader rd = new BufferedReader(is);
+            int length = 0;
+            while(rd.readLine() != null){
+                length++;
+            }
+            rd.close();
+            return length;
+        } catch (IOException e) {
+            e.printStackTrace();
+            return -1;
+        }
+    }
+
+        void readFileLines(BufferedReader rd, Relax relax) {
+        try{
+            String line = rd.readLine();
+            while (line != null) {
+                String[] elm = line.split(" ");
+                for (int j = 1; j < elm.length; ++j) {
+                    relax.relax(Integer.parseInt(elm[j]), Integer.parseInt(elm[0]));
+                }
+                line = rd.readLine();
+            } 
+        }
+        catch(IOException e){
+            e.printStackTrace();
+        }
+    }
+
+    public void edgemap3(Relax relax) {
+        int totalLines = getPageLength();
+        int linesPerThread = (totalLines + numThreads - 1) / numThreads; // Round up
+    
+        List<Thread> threads = new ArrayList<>();
+    
+        for (int i = 0; i < numThreads; i++) {
+            final int startLine = i * linesPerThread + 3; // Start from line 3
+            final int endLine = Math.min((i + 1) * linesPerThread + 2, totalLines); // Adjust end line accordingly
+    
+            Thread thread = new Thread(() -> {
+                readRangeBuffered(startLine, endLine, relax, numThreads);
+            });
+    
+            thread.start();
+            threads.add(thread);
+        }
+    
+        // Wait for all threads to finish
+        for (Thread thread : threads) {
+            try {
+                thread.join();
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+        }
+    }
+
     public void edgemap(Relax relax) {
         try {
             InputStreamReader is = new InputStreamReader(new FileInputStream(file), "UTF-8");
             BufferedReader rd = new BufferedReader(is);
-            readFile(rd, relax);
+            rd.readLine();
+            rd.readLine();
+            rd.readLine();
+            Thread[] threads = new Thread[numThreads];
+            for (int i = 0; i < numThreads; i++) {
+                Thread thread = new Thread(() -> {
+                    readFileLines(rd, relax);
+                });
+        
+                thread.start();
+                threads[i] = thread;
+            }
+            
+            // Wait for all threads to finish
+            for (Thread thread : threads) {
+                try {
+                    thread.join();
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+            }
         } catch (FileNotFoundException e) {
             System.err.println("File not found: " + e);
             return;
@@ -193,6 +309,8 @@ public class SparseMatrixQ6 extends SparseMatrix {
             return;
         }
     }
+
+    // attempt 4
 
 
     // Return number of vertices in the graph

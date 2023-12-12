@@ -28,40 +28,10 @@ public class DisjointSetCC {
             return x;
         }
     
-        public int findNoCompression(int x) {
-            while (x != parents.get(x)) {
-                x = parents.get(x);
-            }
-            return x;
-        }
-    
-        public int findHalving(int x) {
-            while (x != parents.get(x)) {
-                int next = parents.get(x);
-                parents.set(x, parents.get(next));
-                x = next;
-            }
-            return x;
-        }
-
-        public int findSplitting(int x) {
-            while (x != parents.get(x)) {
-                int next = parents.get(x);
-                parents.set(x, parents.get(next));
-                x = next;
-            }
-            return x;
-        }
-    
-        private boolean sameSet(int x, int y) {
-            return find(x) == find(y);
-        }
-    
         private boolean union(int x, int y) {        
             while (true) {
                 int u = find(x);
                 int v = find(y);
-                
                 if (parents.get(u) < parents.get(v)) {
                     if (parents.compareAndSet(u, u, v)) {
                         return false;
