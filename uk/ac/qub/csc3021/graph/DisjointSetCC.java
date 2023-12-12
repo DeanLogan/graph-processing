@@ -19,29 +19,61 @@ public class DisjointSetCC {
             union(src, dst);
         }
 
-        public int find(int x)  {
+        public int find(int x)  { // halving
             while (x != parents.get(x)) {
                 int next = parents.get(x);
-                parents.set(x, parents.get(next));
+                parents.compareAndSet(x, x, next);
                 x = next;
             }
             return x;
         }
-    
+
         private boolean union(int x, int y) {        
             while (true) {
                 int u = find(x);
                 int v = find(y);
                 if (parents.get(u) < parents.get(v)) {
-                    if (parents.compareAndSet(u, u, v)) {
+                    if (parents.compareAndSet(v, v, u)) {
                         return false;
                     }
                 } else if (u == v) {
                     return true;
-                } else if (parents.compareAndSet(v, v, u)) {
+                } else if (parents.compareAndSet(u, u, v)) {
                     return false;
                 }
             }
+        }
+
+        public int findFull(int x) { // full path compression
+            int root = x;
+            while (root != parents.get(root)) {
+                root = parents.get(root);
+            }
+            
+            while (x != root) {
+                int next = parents.get(x);
+                parents.set(x, root);
+                x = next;
+            }
+        
+            return root;
+        }
+
+
+        public int findNoCompression(int x) { // No compression
+            while (x != parents.get(x)) {
+                x = parents.get(x);
+            }
+            return x;
+        }
+
+        public int findSplitting(int x)  { // Splitting
+            while (x != parents.get(x)) {
+                int next = parents.get(x);
+                parents.compareAndSet(x, x, parents.get(next));
+                x = parents.get(x); 
+            }
+            return x;
         }
 
         // Variable declarations

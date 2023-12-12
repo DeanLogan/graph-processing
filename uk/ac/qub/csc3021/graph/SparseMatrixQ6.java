@@ -187,7 +187,6 @@ public class SparseMatrixQ6 extends SparseMatrix {
 
 
     // attempt 3
-    
     void readRangeBuffered(int start, long end, Relax relax, int threadId) {
         try {
             InputStreamReader is = new InputStreamReader(new FileInputStream(file), "UTF-8");
@@ -229,22 +228,6 @@ public class SparseMatrixQ6 extends SparseMatrix {
         }
     }
 
-        void readFileLines(BufferedReader rd, Relax relax) {
-        try{
-            String line = rd.readLine();
-            while (line != null) {
-                String[] elm = line.split(" ");
-                for (int j = 1; j < elm.length; ++j) {
-                    relax.relax(Integer.parseInt(elm[j]), Integer.parseInt(elm[0]));
-                }
-                line = rd.readLine();
-            } 
-        }
-        catch(IOException e){
-            e.printStackTrace();
-        }
-    }
-
     public void edgemap3(Relax relax) {
         int totalLines = getPageLength();
         int linesPerThread = (totalLines + numThreads - 1) / numThreads; // Round up
@@ -270,6 +253,24 @@ public class SparseMatrixQ6 extends SparseMatrix {
             } catch (InterruptedException e) {
                 e.printStackTrace();
             }
+        }
+    }
+
+
+    // attempt 4
+    void readFileLines(BufferedReader rd, Relax relax) {
+        try{
+            String line = rd.readLine();
+            while (line != null) {
+                String[] elm = line.split(" ");
+                for (int j = 1; j < elm.length; ++j) {
+                    relax.relax(Integer.parseInt(elm[j]), Integer.parseInt(elm[0]));
+                }
+                line = rd.readLine();
+            } 
+        }
+        catch(IOException e){
+            e.printStackTrace();
         }
     }
 
@@ -309,9 +310,6 @@ public class SparseMatrixQ6 extends SparseMatrix {
             return;
         }
     }
-
-    // attempt 4
-
 
     // Return number of vertices in the graph
     @Override
