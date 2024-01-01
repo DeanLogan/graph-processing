@@ -78,17 +78,8 @@ class Driver {
 			// matrix = new SparseMatrixCOO( inputFileCOO );
 			// matrix = new SparseMatrixCSR( inputFileCSR );
 			// matrix = new SparseMatrixCSC( inputFileCSC );
-<<<<<<< HEAD
-<<<<<<< HEAD
-			matrix = new SparseMatrixPipelined( inputFile );
-=======
 			// matrix = new SparseMatrixPipelined( inputFile, num_threads );
 			matrix = new SparseMatrixQ6( inputFile, num_threads );
->>>>>>> Q6-Attempt-1
-=======
-			// matrix = new SparseMatrixPipelined( inputFile, num_threads );
-			matrix = new SparseMatrixQ6( inputFile, num_threads );
->>>>>>> Q6-Attempt-2
 		} else {
 			System.err.println( "Unknown format '" + format + "'" );
 				System.exit(43); // Kattis
