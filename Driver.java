@@ -29,11 +29,13 @@ class Driver {
 		int num_threads = Integer.parseInt( args[1] );
 		String outputFile = args[2];
 		String format = args[3];
+		String inputFile = null;
 		String inputFileCOO = null;
 		String inputFileCSR = null;
 		String inputFileCSC = null;
 		for( int i=4; i < args.length; ++i ) {
 			String ext = args[i].substring( args[i].lastIndexOf( "." ) + 1 );
+			inputFile = args[i];
 			if( ext.equals( "csc" ) )
 				inputFileCSC = args[i];
 			else if( ext.equals( "csr" ) )
@@ -75,7 +77,9 @@ class Driver {
 			// Pick any you want.
 			// matrix = new SparseMatrixCOO( inputFileCOO );
 			// matrix = new SparseMatrixCSR( inputFileCSR );
-			matrix = new SparseMatrixCSC( inputFileCSC );
+			// matrix = new SparseMatrixCSC( inputFileCSC );
+			// matrix = new SparseMatrixPipelined( inputFile, num_threads );
+			matrix = new SparseMatrixQ6( inputFile, num_threads );
 		} else {
 			System.err.println( "Unknown format '" + format + "'" );
 				System.exit(43); // Kattis
@@ -93,11 +97,12 @@ class Driver {
 		// - ParallelContextSingleThread: fully implemented
 		// - ParallelContextSimple: needs to be completed by yourself when
 		//   asked for in the assignment brief.
-		if( format.equalsIgnoreCase( "ICHOOSE" ) )
-			ParallelContextHolder.set( new ParallelContextSimple(num_threads) );
-		else
-			ParallelContextHolder.set( new ParallelContextSingleThread() );
-
+		
+		// if( format.equalsIgnoreCase( "ICHOOSE" ) )
+		// 	ParallelContextHolder.set( new ParallelContextSimple(num_threads) );
+		// else
+		// 	ParallelContextHolder.set( new ParallelContextSingleThread() );
+		ParallelContextHolder.set( new ParallelContextSingleThread() );
 		try {
 			if( algorithm.equalsIgnoreCase( "PR" ) ) {
 				// Step 2. Calculate PageRank values for the graph

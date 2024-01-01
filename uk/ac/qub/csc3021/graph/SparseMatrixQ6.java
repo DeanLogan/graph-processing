@@ -1,14 +1,33 @@
 package uk.ac.qub.csc3021.graph;
 
-import java.nio.ByteBuffer;
+import java.io.BufferedReader;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.FileReader;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.io.RandomAccessFile;
+import java.io.UnsupportedEncodingException;
+import java.nio.Buffer;
 import java.nio.MappedByteBuffer;
 import java.nio.channels.FileChannel;
-import java.nio.charset.StandardCharsets;
 import java.nio.file.Paths;
 import java.nio.file.StandardOpenOption;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
+import java.util.regex.Pattern;
+import java.nio.MappedByteBuffer;
+import java.nio.channels.FileChannel;
+import java.nio.file.StandardOpenOption;
+
 
 public class SparseMatrixQ6 extends SparseMatrix {
     int[] index;
@@ -16,145 +35,88 @@ public class SparseMatrixQ6 extends SparseMatrix {
     int num_vertices; // Number of vertices in the graph
     int num_edges;    // Number of edges in the graph
     int numThreads;
-    int fileSize;
-    int chunkSize;
-    int position;
-    FileChannel fc;
+
+    private String file;
 
     public SparseMatrixQ6(String file, int numThreads) {
+        this.file = file;
+        num_vertices = readLineTwo(file);
         this.numThreads = numThreads;
-        try{
-            fc = FileChannel.open(Paths.get(file), StandardOpenOption.READ);
-            fileSize = (int) fc.size();
-            chunkSize = fileSize / numThreads;
-            FileChannel fc = FileChannel.open(Paths.get(file), StandardOpenOption.READ);
-            ByteBuffer buffer = ByteBuffer.allocate(100);
-            fc.read(buffer);
-            String fileContent = new String(buffer.array(), StandardCharsets.UTF_8);
-            String[] lines = fileContent.split("\n");
-            num_vertices = Integer.parseInt(lines[1]);
-            num_edges = Integer.parseInt(lines[2]);
+    }
+
+    public static int readLineTwo(String filePath) {
+        try (BufferedReader reader = new BufferedReader(new FileReader(filePath))) {
+            // Skip the first line
+            reader.readLine();
+
+            // Read and return the second line
+            return Integer.parseInt(reader.readLine());
         }
         catch(Exception e){
             e.printStackTrace();
-        }
-    }
-    
-    void readLinesInRangePipelined(int threadNum, Relax relax, int threadPool) {
-        ExecutorService executor = Executors.newFixedThreadPool(threadPool);
-        int start = threadNum * chunkSize + 1;
-        int end = (threadNum == numThreads - 1) ? fileSize : (threadNum + 1) * chunkSize;
-        MappedByteBuffer buffer;
-        try{
-            buffer = fc.map(FileChannel.MapMode.READ_ONLY, start, end - start);
-        } catch(Exception e){ return; }
-        
-        int lineStart = 0;
-        for (int i = 0; i < buffer.limit(); i++) {
-            if (buffer.get(i) == '\n') {
-                final int lineEnd = i;
-                final int lineStartFinal = lineStart;
-                executor.submit(() -> processLine(buffer, lineStartFinal, lineEnd, relax));
-                lineStart = i + 1;
-            }
-        }
-        executor.shutdown();
-        try {
-            executor.awaitTermination(Long.MAX_VALUE, TimeUnit.NANOSECONDS);
-        } catch (InterruptedException e) {
-            e.printStackTrace();
+            return -1;
         }
     }
 
-    void processLine(ByteBuffer buffer, int start, int end, Relax relax) {
-        int spaceIndex = -1;
-        for (int i = start; i < end; i++) {
-            if (buffer.get(i) == ' ') {
-                spaceIndex = i;
-                break;
-            }
-        }
-    
-        if (spaceIndex != -1) {
-            int firstNumber;
-            try {
-                firstNumber = parseIntegerFromBuffer(buffer, start, spaceIndex);
-            } catch (Exception e) {
-                return;
-            }
-    
-            int numberStart = spaceIndex + 1;
-            for (int i = spaceIndex + 1; i < end; i++) {
-                if (buffer.get(i) == ' ') {
-                    relax.relax(firstNumber, parseIntegerFromBuffer(buffer, numberStart, i));
-                    numberStart = i + 1;
+    int getNext(BufferedReader rd) throws Exception {
+        String line = rd.readLine();
+        if (line == null)
+            throw new Exception("premature end of file");
+        return Integer.parseInt(line);
+    }
+
+    void readFile(BufferedReader rd, Relax relax) throws Exception {
+        String line = rd.readLine();
+        if (line == null)
+            throw new Exception("premature end of file");
+        if (!line.equalsIgnoreCase("CSC") && !line.equalsIgnoreCase("CSC-CSR"))
+            throw new Exception("file format error -- header");
+
+        num_vertices = getNext(rd);
+        num_edges = getNext(rd);
+
+        ExecutorService executor = Executors.newFixedThreadPool(numThreads); 
+        List<Future<?>> futures = new ArrayList<>();
+
+        for (int i = 0; i < num_vertices; ++i) {
+            line = rd.readLine();
+            if (line == null)
+                throw new Exception("premature end of file");
+            String[] elm = line.split(" ");
+            assert Integer.parseInt(elm[0]) == i : "Error in CSC file";
+
+            final int index = i;
+            Callable<Void> task = () -> {
+                for (int j = 1; j < elm.length; ++j) {
+                    relax.relax(Integer.parseInt(elm[j]), index);
                 }
-            }
-            relax.relax(firstNumber, parseIntegerFromBuffer(buffer, numberStart, end)); // Call relax for the last number in the line
-        }
-    }
-    
-    int parseIntegerFromBuffer(ByteBuffer buffer, int start, int end) {
-        int result = 0;
-        for (int i = start; i < end; i++) {
-            result = result * 10 + (buffer.get(i) - '0');
-        }
-        return result;
-    }
-    
-    public void edgemap(Relax relax){
-        Thread[] threads;
-        if(numThreads > 3 && num_edges > 1000000){
-            int pairsOfThree = (int) Math.floor(numThreads / 3);
-            int remainder = numThreads % 3;
-            threads = new Thread[pairsOfThree + remainder];
-            if(remainder != 0){
-                Thread thread = new Thread(() -> readLinesInRange(0, relax));
-                thread.start();
-                threads[0] = thread;
-            }
-            for (int i = remainder; i < pairsOfThree+remainder; i++) {
-                final int threadNum = i;
-                Thread thread = new Thread(() -> readLinesInRangePipelined(threadNum, relax, 2));
-                thread.start();
-                threads[i] = thread;
-            } 
-        }
-        else{
-            threads = new Thread[numThreads];
-            for (int i = 0; i < numThreads; i++) {
-                final int threadNum = i;
-                Thread thread = new Thread(() -> readLinesInRange(threadNum, relax));
-                thread.start();
-                threads[i] = thread;
-            } 
+                return null;
+            };
+
+            futures.add(executor.submit(task));
         }
 
-
-        // Wait for all threads to finish
-        for (Thread thread : threads) {
-            try {
-                thread.join();
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-            }
+        for (Future<?> future : futures) {
+            future.get();
         }
+
+        executor.shutdown();
     }
-    
-    void readLinesInRange(int threadNum, Relax relax) {
-        int start = threadNum * chunkSize + 1;
-        int end = (threadNum == numThreads - 1) ? fileSize : (threadNum + 1) * chunkSize;
-        MappedByteBuffer buffer;
-        try{
-            buffer = fc.map(FileChannel.MapMode.READ_ONLY, start, end - start);
-        } catch(Exception e){ return; }
-        
-        int lineStart = 0;
-        for (int i = 0; i < buffer.limit(); i++) {
-            if (buffer.get(i) == '\n') {
-                processLine(buffer, lineStart, i, relax);
-                lineStart = i + 1;
-            }
+
+    public void edgemap(Relax relax) {
+        try {
+            InputStreamReader is = new InputStreamReader(new FileInputStream(file), "UTF-8");
+            BufferedReader rd = new BufferedReader(is);
+            readFile(rd, relax);
+        } catch (FileNotFoundException e) {
+            System.err.println("File not found: " + e);
+            return;
+        } catch (UnsupportedEncodingException e) {
+            System.err.println("Unsupported encoding exception: " + e);
+            return;
+        } catch (Exception e) {
+            e.printStackTrace();
+            return;
         }
     }
 
