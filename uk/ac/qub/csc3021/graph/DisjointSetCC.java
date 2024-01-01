@@ -1,10 +1,15 @@
 package uk.ac.qub.csc3021.graph;
 
 <<<<<<< HEAD
+<<<<<<< HEAD
 =======
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ForkJoinPool;
 >>>>>>> Q6-Attempt-1
+=======
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ForkJoinPool;
+>>>>>>> Q6-Attempt-2
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicIntegerArray;
 import java.util.stream.IntStream;
@@ -67,6 +72,7 @@ public class DisjointSetCC {
                 int u = find(x);
                 int v = find(y);
 <<<<<<< HEAD
+<<<<<<< HEAD
         
                 if (parents.get(u) < parents.get(v)) {
                     if (parents.compareAndSet(u, u, v)) {
@@ -82,6 +88,14 @@ public class DisjointSetCC {
                     if (parents.compareAndSet(v, v, u)) {
                         return false;
                     }
+=======
+                if (u == v) {
+                    return true;
+                } else if (u < v) {
+                    if (parents.compareAndSet(v, v, u)) {
+                        return false;
+                    }
+>>>>>>> Q6-Attempt-2
                 } else if (parents.compareAndSet(u, u, v)) {
 >>>>>>> Q6-Attempt-1
                     return false;
@@ -89,6 +103,41 @@ public class DisjointSetCC {
             }
         }
 
+<<<<<<< HEAD
+=======
+        // Attempt 5
+        // public int findFull(int x) { // full path compression
+        //     int root = x;
+        //     while (root != parents.get(root)) {
+        //         root = parents.get(root);
+        //     }
+            
+        //     while (x != root) {
+        //         int next = parents.get(x);
+        //         parents.set(x, root);
+        //         x = next;
+        //     }
+        
+        //     return root;
+        // }
+
+        // public int findNoCompression(int x) { // No compression
+        //     while (x != parents.get(x)) {
+        //         x = parents.get(x);
+        //     }
+        //     return x;
+        // }
+
+        // public int findSplitting(int x)  { // Splitting
+        //     while (x != parents.get(x)) {
+        //         int next = parents.get(x);
+        //         parents.compareAndSet(x, x, parents.get(next));
+        //         x = parents.get(x); 
+        //     }
+        //     return x;
+        // }
+
+>>>>>>> Q6-Attempt-2
         // Variable declarations
         private AtomicIntegerArray parents;
     }
