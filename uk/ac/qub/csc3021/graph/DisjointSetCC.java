@@ -47,6 +47,38 @@ public class DisjointSetCC {
             }
         }
 
+        // Attempt 5
+        public int findFull(int x) { // full path compression
+            int root = x;
+            while (root != parents.get(root)) {
+                root = parents.get(root);
+            }
+            
+            while (x != root) {
+                int next = parents.get(x);
+                parents.set(x, root);
+                x = next;
+            }
+        
+            return root;
+        }
+
+        public int findNoCompression(int x) { // No compression
+            while (x != parents.get(x)) {
+                x = parents.get(x);
+            }
+            return x;
+        }
+
+        public int findSplitting(int x)  { // Splitting
+            while (x != parents.get(x)) {
+                int next = parents.get(x);
+                parents.compareAndSet(x, x, parents.get(next));
+                x = parents.get(x); 
+            }
+            return x;
+        }
+
         // Variable declarations
         private AtomicIntegerArray parents;
     }
