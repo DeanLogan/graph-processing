@@ -49,74 +49,59 @@ public class SparseMatrixQ6 extends SparseMatrix {
         }
     }
 
-    void readRangeBuffered(int start, long end, Relax relax, int threadId) {
-        try {
-            InputStreamReader is = new InputStreamReader(new FileInputStream(file), "UTF-8");
-            BufferedReader rd = new BufferedReader(is);
-            for(int i = 0; i < start; i++){
-                rd.readLine();
-            }
-
-            for(int i = start-3; i < end; i++){
-                try{
-                    String[] elm = rd.readLine().split(" ");
-                    for (int j = 1; j < elm.length; ++j) {
-                        relax.relax(Integer.parseInt(elm[j]), i);
-                    }
+    void readFileLines(BufferedReader rd, Relax relax) {
+        try{
+            String line = rd.readLine();
+            while (line != null) {
+                String[] elm = line.split(" ");
+                for (int j = 1; j < elm.length; ++j) {
+                    relax.relax(Integer.parseInt(elm[j]), Integer.parseInt(elm[0]));
                 }
-                catch(Exception e){
-                    break;
-                }
-            }
-            rd.close();
-        } catch (IOException e) {
-            e.printStackTrace();
+                line = rd.readLine();
+            } 
         }
-    }
-    
-    int getPageLength(){
-        try {
-            InputStreamReader is = new InputStreamReader(new FileInputStream(file), "UTF-8");
-            BufferedReader rd = new BufferedReader(is);
-            int length = 0;
-            while(rd.readLine() != null){
-                length++;
-            }
-            rd.close();
-            return length;
-        } catch (IOException e) {
+        catch(IOException e){
             e.printStackTrace();
-            return -1;
         }
     }
 
     public void edgemap(Relax relax) {
-        int totalLines = getPageLength();
-        int linesPerThread = (totalLines + numThreads - 1) / numThreads; // Round up
-    
-        List<Thread> threads = new ArrayList<>();
-    
-        for (int i = 0; i < numThreads; i++) {
-            final int startLine = i * linesPerThread + 3; // Start from line 3
-            final int endLine = Math.min((i + 1) * linesPerThread + 2, totalLines); // Adjust end line accordingly
-    
-            Thread thread = new Thread(() -> {
-                readRangeBuffered(startLine, endLine, relax, numThreads);
-            });
-    
-            thread.start();
-            threads.add(thread);
-        }
-    
-        // Wait for all threads to finish
-        for (Thread thread : threads) {
-            try {
-                thread.join();
-            } catch (InterruptedException e) {
-                e.printStackTrace();
+        try {
+            InputStreamReader is = new InputStreamReader(new FileInputStream(file), "UTF-8");
+            BufferedReader rd = new BufferedReader(is);
+            rd.readLine();
+            rd.readLine();
+            rd.readLine();
+            Thread[] threads = new Thread[numThreads];
+            for (int i = 0; i < numThreads; i++) {
+                Thread thread = new Thread(() -> {
+                    readFileLines(rd, relax);
+                });
+        
+                thread.start();
+                threads[i] = thread;
             }
+            
+            // Wait for all threads to finish
+            for (Thread thread : threads) {
+                try {
+                    thread.join();
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+            }
+        } catch (FileNotFoundException e) {
+            System.err.println("File not found: " + e);
+            return;
+        } catch (UnsupportedEncodingException e) {
+            System.err.println("Unsupported encoding exception: " + e);
+            return;
+        } catch (Exception e) {
+            e.printStackTrace();
+            return;
         }
     }
+
 
     // Return number of vertices in the graph
     @Override
