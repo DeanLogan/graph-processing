@@ -6,7 +6,9 @@ import java.nio.channels.FileChannel;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Paths;
 import java.nio.file.StandardOpenOption;
-
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 
 public class SparseMatrixQ6 extends SparseMatrix {
     int[] index;
@@ -37,8 +39,9 @@ public class SparseMatrixQ6 extends SparseMatrix {
             e.printStackTrace();
         }
     }
-
-    void readLinesInRange(int threadNum, Relax relax) {
+    
+    void readLinesInRangePipelined(int threadNum, Relax relax, int threadPool) {
+        ExecutorService executor = Executors.newFixedThreadPool(threadPool);
         int start = threadNum * chunkSize + 1;
         int end = (threadNum == numThreads - 1) ? fileSize : (threadNum + 1) * chunkSize;
         MappedByteBuffer buffer;
@@ -49,13 +52,21 @@ public class SparseMatrixQ6 extends SparseMatrix {
         int lineStart = 0;
         for (int i = 0; i < buffer.limit(); i++) {
             if (buffer.get(i) == '\n') {
-                processLine(buffer, lineStart, i, relax);
+                final int lineEnd = i;
+                final int lineStartFinal = lineStart;
+                executor.submit(() -> processLine(buffer, lineStartFinal, lineEnd, relax));
                 lineStart = i + 1;
             }
         }
+        executor.shutdown();
+        try {
+            executor.awaitTermination(Long.MAX_VALUE, TimeUnit.NANOSECONDS);
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
     }
 
-    void processLine(MappedByteBuffer buffer, int start, int end, Relax relax) {
+    void processLine(ByteBuffer buffer, int start, int end, Relax relax) {
         int spaceIndex = -1;
         for (int i = start; i < end; i++) {
             if (buffer.get(i) == ' ') {
@@ -83,24 +94,42 @@ public class SparseMatrixQ6 extends SparseMatrix {
         }
     }
     
-    int parseIntegerFromBuffer(MappedByteBuffer buffer, int start, int end) {
+    int parseIntegerFromBuffer(ByteBuffer buffer, int start, int end) {
         int result = 0;
         for (int i = start; i < end; i++) {
             result = result * 10 + (buffer.get(i) - '0');
         }
         return result;
     }
-
-
+    
     public void edgemap(Relax relax){
-        Thread[] threads = new Thread[numThreads];
-        System.out.println("im here");
-        for (int i = 0; i < numThreads; i++) {
-            final int threadNum = i;
-            Thread thread = new Thread(() -> readLinesInRange(threadNum, relax));
-            thread.start();
-            threads[i] = thread;
-        } 
+        Thread[] threads;
+        if(numThreads > 3 && num_edges > 1000000){
+            int pairsOfThree = (int) Math.floor(numThreads / 3);
+            int remainder = numThreads % 3;
+            threads = new Thread[pairsOfThree + remainder];
+            if(remainder != 0){
+                Thread thread = new Thread(() -> readLinesInRange(0, relax));
+                thread.start();
+                threads[0] = thread;
+            }
+            for (int i = remainder; i < pairsOfThree+remainder; i++) {
+                final int threadNum = i;
+                Thread thread = new Thread(() -> readLinesInRangePipelined(threadNum, relax, 2));
+                thread.start();
+                threads[i] = thread;
+            } 
+        }
+        else{
+            threads = new Thread[numThreads];
+            for (int i = 0; i < numThreads; i++) {
+                final int threadNum = i;
+                Thread thread = new Thread(() -> readLinesInRange(threadNum, relax));
+                thread.start();
+                threads[i] = thread;
+            } 
+        }
+
 
         // Wait for all threads to finish
         for (Thread thread : threads) {
@@ -108,6 +137,23 @@ public class SparseMatrixQ6 extends SparseMatrix {
                 thread.join();
             } catch (InterruptedException e) {
                 e.printStackTrace();
+            }
+        }
+    }
+    
+    void readLinesInRange(int threadNum, Relax relax) {
+        int start = threadNum * chunkSize + 1;
+        int end = (threadNum == numThreads - 1) ? fileSize : (threadNum + 1) * chunkSize;
+        MappedByteBuffer buffer;
+        try{
+            buffer = fc.map(FileChannel.MapMode.READ_ONLY, start, end - start);
+        } catch(Exception e){ return; }
+        
+        int lineStart = 0;
+        for (int i = 0; i < buffer.limit(); i++) {
+            if (buffer.get(i) == '\n') {
+                processLine(buffer, lineStart, i, relax);
+                lineStart = i + 1;
             }
         }
     }
