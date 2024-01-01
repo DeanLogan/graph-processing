@@ -19,15 +19,11 @@ public class SparseMatrixPipelined extends SparseMatrix {
 
     private String file;
     private LinkedBlockingQueue<int[][]> queue;
-    private int block_size;
 
-    public SparseMatrixPipelined(String file, int buffer_size) {
+    public SparseMatrixPipelined(String file) {
         this.file = file;
-        buffer_size = 6;
-        // buffer_size = Integer.MAX_VALUE;
-        this.queue = new LinkedBlockingQueue<int[][]>(buffer_size);
+        this.queue = new LinkedBlockingQueue<int[][]>();
         num_vertices = readLineTwo(file);
-        block_size = 128;
     }
 
     public static int readLineTwo(String filePath) {
@@ -170,7 +166,7 @@ public class SparseMatrixPipelined extends SparseMatrix {
             Thread consumerThread = startConsumer(relax);
             InputStreamReader is = new InputStreamReader(new FileInputStream(file), "UTF-8");
             BufferedReader rd = new BufferedReader(is);
-            readFile(rd, block_size);
+            readFile(rd, 128);
             consumerThread.join();
         } catch (FileNotFoundException e) {
             System.err.println("File not found: " + e);

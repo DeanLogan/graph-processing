@@ -1,5 +1,6 @@
 package uk.ac.qub.csc3021.graph;
 
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicIntegerArray;
 
 // Calculate the connected components using the disjoint set data structure
@@ -18,62 +19,58 @@ public class DisjointSetCC {
             union(src, dst);
         }
 
-        public int find(int x)  { // halving
+        public int find(int x)  {
             while (x != parents.get(x)) {
                 int next = parents.get(x);
-                parents.compareAndSet(x, x, next);
+                parents.set(x, parents.get(next));
                 x = next;
             }
             return x;
         }
+    
+        // public int find(int x) { 
+        //     while (x != parents.get(x)) {
+        //         parents.set(x, parents.get(parents.get(x))); // Halving step
+        //         x = parents.get(x);
+        //     }
+        //     return x;
+        // }
+    
+        public int findHalving(int x) {
+            if (x != parents.get(x)) {
+                parents.set(x, findHalving(parents.get(x)));
+            }
+            return parents.get(x);
+        }
 
+        public int findSplitting(int x) {
+            while (x != parents.get(x)) {
+                int next = parents.get(x);
+                parents.set(x, parents.get(next));
+                x = next;
+            }
+            return x;
+        }
+    
+        private boolean sameSet(int x, int y) {
+            return find(x) == find(y);
+        }
+    
         private boolean union(int x, int y) {        
             while (true) {
                 int u = find(x);
                 int v = find(y);
-                if (u < v) {
-                    if (parents.compareAndSet(v, v, u)) {
+        
+                if (parents.get(u) < parents.get(v)) {
+                    if (parents.compareAndSet(u, u, v)) {
                         return false;
                     }
                 } else if (u == v) {
                     return true;
-                } else if (parents.compareAndSet(u, u, v)) {
+                } else if (parents.compareAndSet(v, v, u)) {
                     return false;
                 }
             }
-        }
-
-
-        // Attempt 5
-        public int findFull(int x) { // full path compression
-            int root = x;
-            while (root != parents.get(root)) {
-                root = parents.get(root);
-            }
-            
-            while (x != root) {
-                int next = parents.get(x);
-                parents.set(x, root);
-                x = next;
-            }
-        
-            return root;
-        }
-
-        public int findNoCompression(int x) { // No compression
-            while (x != parents.get(x)) {
-                x = parents.get(x);
-            }
-            return x;
-        }
-
-        public int findSplitting(int x)  { // Splitting
-            while (x != parents.get(x)) {
-                int next = parents.get(x);
-                parents.compareAndSet(x, x, parents.get(next));
-                x = parents.get(x); 
-            }
-            return x;
         }
 
         // Variable declarations
@@ -98,6 +95,8 @@ public class DisjointSetCC {
         double tm_init = (double) (System.nanoTime() - tm_start) * 1e-9;
         System.err.println("Initialisation: " + tm_init + " seconds");
         tm_start = System.nanoTime();
+
+        ParallelContextHolder.set( new ParallelContextSingleThread() );
 
         ParallelContext context = ParallelContextHolder.get();
 
