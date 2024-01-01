@@ -78,7 +78,12 @@ class Driver {
 			// matrix = new SparseMatrixCOO( inputFileCOO );
 			// matrix = new SparseMatrixCSR( inputFileCSR );
 			// matrix = new SparseMatrixCSC( inputFileCSC );
+<<<<<<< HEAD
 			matrix = new SparseMatrixPipelined( inputFile );
+=======
+			// matrix = new SparseMatrixPipelined( inputFile, num_threads );
+			matrix = new SparseMatrixQ6( inputFile, num_threads );
+>>>>>>> Q6-Attempt-1
 		} else {
 			System.err.println( "Unknown format '" + format + "'" );
 				System.exit(43); // Kattis
@@ -96,11 +101,12 @@ class Driver {
 		// - ParallelContextSingleThread: fully implemented
 		// - ParallelContextSimple: needs to be completed by yourself when
 		//   asked for in the assignment brief.
-		if( format.equalsIgnoreCase( "ICHOOSE" ) )
-			ParallelContextHolder.set( new ParallelContextSimple(num_threads) );
-		else
-			ParallelContextHolder.set( new ParallelContextSingleThread() );
-
+		
+		// if( format.equalsIgnoreCase( "ICHOOSE" ) )
+		// 	ParallelContextHolder.set( new ParallelContextSimple(num_threads) );
+		// else
+		// 	ParallelContextHolder.set( new ParallelContextSingleThread() );
+		ParallelContextHolder.set( new ParallelContextSingleThread() );
 		try {
 			if( algorithm.equalsIgnoreCase( "PR" ) ) {
 				// Step 2. Calculate PageRank values for the graph

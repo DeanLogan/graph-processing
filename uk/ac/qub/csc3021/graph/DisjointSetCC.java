@@ -1,7 +1,13 @@
 package uk.ac.qub.csc3021.graph;
 
+<<<<<<< HEAD
+=======
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ForkJoinPool;
+>>>>>>> Q6-Attempt-1
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicIntegerArray;
+import java.util.stream.IntStream;
 
 // Calculate the connected components using the disjoint set data structure
 // This algorithm only works correctly for undirected graphs
@@ -60,6 +66,7 @@ public class DisjointSetCC {
             while (true) {
                 int u = find(x);
                 int v = find(y);
+<<<<<<< HEAD
         
                 if (parents.get(u) < parents.get(v)) {
                     if (parents.compareAndSet(u, u, v)) {
@@ -68,6 +75,15 @@ public class DisjointSetCC {
                 } else if (u == v) {
                     return true;
                 } else if (parents.compareAndSet(v, v, u)) {
+=======
+                if (u == v) {
+                    return true;
+                } else if (u < v) {
+                    if (parents.compareAndSet(v, v, u)) {
+                        return false;
+                    }
+                } else if (parents.compareAndSet(u, u, v)) {
+>>>>>>> Q6-Attempt-1
                     return false;
                 }
             }
